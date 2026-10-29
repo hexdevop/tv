@@ -5,8 +5,9 @@
 Подробно: [ARCHITECTURE](.claude/team/ARCHITECTURE.md), [SPEC](.claude/team/SPEC.md), [PLAN](.claude/team/PLAN.md).
 
 ## Стек и команды
+- adb только из SDK Android Studio: `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe` (в bash `$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe`). Второй adb другой сборки перезапускает сервер, и ТВ уходит в `offline`. Лечится `adb disconnect` + `adb connect`.
 - ТВ: `adb connect 192.168.1.5:5555`; root: `adb shell "su 0 <cmd>"`.
-- Бэкап разделов: `ADB=<путь к adb> bash tools/backup.sh 192.168.1.5:5555 backup/<имя>`. В конце печатает `OK`/`MISMATCH` по каждому разделу.
+- Бэкап разделов: `ADB=<путь к adb> bash tools/backup.sh 192.168.1.5:5555 backup/<имя>`. Печатает `OK`/`MISMATCH` по каждому разделу. Докачать отдельные разделы: `PARTS="system vendor" ...`.
 - Скрипты в `tools/` пишутся на bash и запускаются из Git Bash. Бинарные данные (`exec-out`) только через bash: PowerShell 5.1 портит их при `>`.
 - `launcher/` (появится): Kotlin + Compose for TV, Gradle. `./gradlew assembleDebug test lint`, установка `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
 
