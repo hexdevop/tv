@@ -1,0 +1,13 @@
+backup/
+quarantine/
+*.img
+.claude/messages/
+.claude/settings.local.json
+
+# Android
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
