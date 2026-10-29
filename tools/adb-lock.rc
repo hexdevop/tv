@@ -1,12 +1,13 @@
-# T-004: adb (5555) только с ПК разработчика, после каждой загрузки. Ставится в /system/etc/init/.
-# Те же правила, что в tools/adb-lock.sh. Сменился IP ПК: задать ему статический 192.168.1.7.
+# T-004: adb (5555) только из домашней подсети, после каждой загрузки и перезапуска netd. Ставится в /system/etc/init/.
+# Главная защита: ro.adb.secure=1 (ключ ПК в /data/misc/adb/adb_keys). Подсеть отсекает внешние адреса и 127.0.0.1.
 # seclabel обязателен: без него init не запускает iptables (нет перехода домена из init).
-service adb-lock /system/bin/sh -c "/system/bin/iptables -w -I INPUT -p tcp --dport 5555 ! -s 192.168.1.7 -j DROP; /system/bin/ip6tables -w -I INPUT -p tcp --dport 5555 -j DROP"
+# Без "$" в команде: init раскрывает $x как свойство. sleep 5: дать netd закончить настройку цепочек.
+service adb-lock /system/bin/sh -c "sleep 5; while /system/bin/iptables -w -D INPUT -p tcp --dport 5555 ! -s 192.168.1.0/24 -j DROP 2>/dev/null; do :; done; while /system/bin/ip6tables -w -D INPUT -p tcp --dport 5555 -j DROP 2>/dev/null; do :; done; /system/bin/iptables -w -I INPUT -p tcp --dport 5555 ! -s 192.168.1.0/24 -j DROP && /system/bin/ip6tables -w -I INPUT -p tcp --dport 5555 -j DROP && log -t adb-lock ok || log -p e -t adb-lock FAILED"
     user root
     group root
     seclabel u:r:su:s0
     oneshot
     disabled
 
-on property:sys.boot_completed=1
+on property:init.svc.netd=running && property:sys.boot_completed=1
     start adb-lock
