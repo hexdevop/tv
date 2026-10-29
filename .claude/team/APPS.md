@@ -79,7 +79,7 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 | com.android.uwb.resources | ресурсы UWB (apex) | keep | инертен | apex uwb |
 | com.android.virtualmachine.res | ресурсы AVF (apex) | keep | инертен | apex virt |
 | com.android.webview | System WebView | keep | **Allplay, TelecomTV, вход в аккаунты** (предп. используют WebView) | приложения |
-| com.android.chrome | Chrome | ask-user | нет браузера; ~100+ МБ RAM при запуске | WebView не зависит от Chrome |
+| com.android.chrome | Chrome | keep | нет браузера; ~100+ МБ RAM при запуске | WebView не зависит от Chrome |
 | com.android.internal.display.cutout.emulation.corner | оверлей выреза экрана | remove-later | нет | — |
 | com.android.internal.display.cutout.emulation.double | оверлей выреза экрана | remove-later | нет | — |
 | com.android.internal.display.cutout.emulation.hole | оверлей выреза экрана | remove-later | нет | — |
@@ -103,11 +103,11 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 | com.hisilicon.dlna.dmr | DLNA Renderer (run) | keep | **в запретном списке** | сеть |
 | com.hisilicon.tvui | HiTvPlayer: полноэкранный ТВ/HDMI-плеер (предп.) | keep | **не открываются HDMI/ТВ-тюнер** с текущего лаунчера | `com.hisilicon.tv.service`, Zeasn, HkSingleKey |
 | com.hisilicon.dlna.dmp | DLNA Player (клиент) | disable | нет | — |
-| com.hisilicon.miracast | Miracast (трансляция экрана) | ask-user | нет трансляции с телефона | Wi-Fi Direct |
-| com.hisilicon.android.music | HkMusic, музыкальный плеер (run) | ask-user | нет плеера музыки с USB | MediaProvider |
-| com.hisilicon.android.videoplayer | HkVideoPlayer, видео с USB | ask-user | нет плеера видео с USB | MediaProvider, `com.hikeen.mediaplayer` (предп.) |
+| com.hisilicon.miracast | Miracast (трансляция экрана) | disable | нет трансляции с телефона | Wi-Fi Direct |
+| com.hisilicon.android.music | HkMusic, музыкальный плеер (run) | keep | нет плеера музыки с USB | MediaProvider |
+| com.hisilicon.android.videoplayer | HkVideoPlayer, видео с USB | keep | нет плеера видео с USB | MediaProvider, `com.hikeen.mediaplayer` (предп.) |
 | com.vendor.vnaudiomanager | VnAudioManager (run), аудио-менеджер вендора (предп.) | keep | **звук** (предп.: выходы, режимы) | HAL аудио, Hikeen-настройки |
-| com.adups.fota | Adups FOTA, обновления по воздуху (run) | disable | нет; без него вендорский OTA не перезапишет наши изменения. Adups известен сбором данных | сеть |
+| com.adups.fota | Adups FOTA, обновления по воздуху (run) | remove-later | PERSISTENT + android.uid.system: после disable-user процесс всё равно стартует и падает каждые 4 с (проверено 2026-10-29), поэтому убрать APK из `/system/app/FotaUpdate` после T-007; без него вендорский OTA не перезапишет наши изменения. Adups известен сбором данных | сеть |
 | com.adups.fota.overlay | оверлей FOTA в `/vendor` | keep | инертен; `vendor` не трогаем | `com.adups.fota` |
 
 ## Hikeen (настройки ТВ, меню, factory, hotel)
@@ -120,10 +120,10 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 | com.hikeen.hkhotelmenu | гостиничный режим (блокировка источника/громкости) | disable | если hotel mode где-то включён, его настройки перестанут применяться | `com.hisilicon.tv.service` |
 | com.hikeen.tv.factorymenu | сервисное (заводское) меню: баланс белого, панель | keep | нет доступа к сервисному меню для ремонта; инертен, пока не вызвать кодом | `com.hisilicon.tv.service` |
 | com.hikeen.cleanmaster | «очистка памяти» | disable | нет | — |
-| com.hikeen.higallery | галерея фото с USB | ask-user | нет просмотра фото | MediaProvider |
-| com.hikeen.mediaplayer | медиацентр USB (предп. оболочка над плеерами) | ask-user | нет USB-медиа | HkVideoPlayer, HkMusic, HiGallery |
+| com.hikeen.higallery | галерея фото с USB | keep | нет просмотра фото | MediaProvider |
+| com.hikeen.mediaplayer | медиацентр USB (предп. оболочка над плеерами) | keep | нет USB-медиа | HkVideoPlayer, HkMusic, HiGallery |
 | com.factory.factoryautomation | FactoryAutomationService (run): заводской автотест (предп.) | disable | предп. нет; может слушать сеть/UART для заводских команд. Проверить отдельно (что держит, `dumpsys package`) | `com.hisilicon.tv.service` (предп.) |
-| com.dolphin.assistant | VoiceAssistant (run), голосовой помощник Dolphin | ask-user | кнопка микрофона на пульте может перестать работать | BT/голосовой пульт, Katniss? |
+| com.dolphin.assistant | VoiceAssistant (run), голосовой помощник Dolphin | disable | кнопка микрофона на пульте может перестать работать | BT/голосовой пульт, Katniss? |
 | com.dolphin.remote.server | DolphinsRemote: сервер для пульта-приложения на телефоне (предп.) | disable | нет пульта с телефона Dolphin; ИК-пульт не затрагивает (ИК идёт через `android_ir_user`) | сеть (открытый порт, предп.) |
 
 ## Zeasn (лаунчер, магазин)
@@ -131,7 +131,7 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 | Пакет | Что это | Решение | Риск, если отключить | Завязан на / от него зависит |
 |---|---|---|---|---|
 | com.zeasn.launcher | ZeasnLauncher_Noah5, текущий HOME | disable | **без другого HOME — пустой экран после загрузки** | HOME, HiTvPlayer, HkSingleKey |
-| zeasn.open.technical.tv.store | TvStore_Noah5, магазин Zeasn | ask-user | не обновятся приложения, поставленные из него (предп. Allplay/TelecomTV) | Zeasn launcher |
+| zeasn.open.technical.tv.store | TvStore_Noah5, магазин Zeasn | disable | не обновятся приложения, поставленные из него (предп. Allplay/TelecomTV) | Zeasn launcher |
 
 ## Google
 
@@ -142,19 +142,19 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 | com.google.android.ext.shared | общая библиотека Google | keep | падения GMS-приложений | GMS |
 | com.google.android.tv.remote.service | AtvRemoteService (run): пульт Google TV с телефона, голос с BT-пультов | keep | приложение-пульт Google TV; возможно голос с BT-пульта | GMS, Katniss |
 | com.android.vending | Play Market (`product/priv-app/Tubesky/Tubesky.apk`, 32.0.18). Подпись проверена lead 2026-10-29: оригинальный сертификат Google `F0:FD:6C:…:DB:83`, тот же, что у GMS. `Tubesky` — просто имя папки у вендора | keep | Allplay и TelecomTV установлены и обновляются через Play | GMS |
-| com.google.android.katniss | голосовой поиск Android TV | ask-user | нет голосового поиска | GMS, кнопка микрофона |
-| com.google.android.backdrop | заставка Backdrop; APK в `/data/app` (обновление или установлено отдельно) | ask-user | будет стандартная заставка | GMS |
-| com.google.android.onetimeinitializer | одноразовая инициализация Google при первом запуске | ask-user | нет (уже отработал) | GMS |
+| com.google.android.katniss | голосовой поиск Android TV | disable | нет голосового поиска | GMS, кнопка микрофона |
+| com.google.android.backdrop | заставка Backdrop; APK в `/data/app` (обновление или установлено отдельно) | disable | будет стандартная заставка | GMS |
+| com.google.android.onetimeinitializer | одноразовая инициализация Google при первом запуске | disable | нет (уже отработал) | GMS |
 | com.google.android.exoplayer2.demo | демо-приложение ExoPlayer | disable | нет | — |
 
 ## Итог по решениям
 
 | Решение | Кол-во |
 |---|---|
-| keep | 66 |
-| disable | 20 (14 в первом наборе, 6 после замены Zeasn) |
-| remove-later | 13 |
-| ask-user | 12 |
+| keep | 72 |
+| disable | 25 (19 в первом наборе, 6 после замены Zeasn) |
+| remove-later | 14 |
+| ask-user | 0 (решено пользователем 2026-10-29) |
 | **всего** | 111 |
 
 ## 1. Безопасный первый набор (`pm disable-user --user 0`)
@@ -162,7 +162,6 @@ YouTube, Allplay и TelecomTV в списке нет: это пользоват�
 Не участвуют в картинке, звуке, пульте, источниках, сети и настройках. Ничего из запретного списка ARCHITECTURE.md.
 
 ```
-com.adups.fota
 com.android.bips
 com.android.bluetoothmidiservice
 com.android.bookmarkprovider
@@ -176,6 +175,13 @@ com.android.wallpaperbackup
 com.google.android.exoplayer2.demo
 com.hikeen.cleanmaster
 com.hisilicon.dlna.dmp
+# по ответам пользователя 2026-10-29
+com.dolphin.assistant
+com.google.android.backdrop
+com.google.android.katniss
+com.google.android.onetimeinitializer
+com.hisilicon.miracast
+zeasn.open.technical.tv.store
 ```
 Откат: `pm enable <пакет>` по тому же списку. Проверка после перезагрузки: картинка, HDMI, ТВ-тюнер, кнопки пульта, звук, Wi-Fi/Ethernet, YouTube, Allplay, TelecomTV, меню Hikeen.
 
