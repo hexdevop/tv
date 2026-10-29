@@ -107,7 +107,7 @@ YouTube и TelecomTV в списке нет: это пользовательск
 | com.hisilicon.android.music | HkMusic, музыкальный плеер (run) | keep | нет плеера музыки с USB | MediaProvider |
 | com.hisilicon.android.videoplayer | HkVideoPlayer, видео с USB | keep | нет плеера видео с USB | MediaProvider, `com.hikeen.mediaplayer` (предп.) |
 | com.vendor.vnaudiomanager | VnAudioManager (run), аудио-менеджер вендора (предп.) | keep | **звук** (предп.: выходы, режимы) | HAL аудио, Hikeen-настройки |
-| com.adups.fota | Adups FOTA, обновления по воздуху (run) | remove-later | PERSISTENT + android.uid.system: после disable-user процесс всё равно стартует и падает каждые 4 с (проверено 2026-10-29), поэтому убрать APK из `/system/app/FotaUpdate` после T-007; без него вендорский OTA не перезапишет наши изменения. Adups известен сбором данных | сеть |
+| com.adups.fota | Adups FOTA, обновления по воздуху (run) | remove-later | PERSISTENT + android.uid.system: после disable-user процесс всё равно стартует и падает каждые 4 с (проверено 2026-10-29), APK перенесён в `/data/local/quarantine/FotaUpdate` 2026-10-29 (откат: вернуть каталог в `/system/app`); без него вендорский OTA не перезапишет наши изменения. Adups известен сбором данных | сеть |
 | com.adups.fota.overlay | оверлей FOTA в `/vendor` | keep | инертен; `vendor` не трогаем | `com.adups.fota` |
 
 ## Hikeen (настройки ТВ, меню, factory, hotel)

@@ -1,0 +1,12 @@
+# T-004: adb (5555) только с ПК разработчика, после каждой загрузки. Ставится в /system/etc/init/.
+# Те же правила, что в tools/adb-lock.sh. Сменился IP ПК: задать ему статический 192.168.1.7.
+# seclabel обязателен: без него init не запускает iptables (нет перехода домена из init).
+service adb-lock /system/bin/sh -c "/system/bin/iptables -w -I INPUT -p tcp --dport 5555 ! -s 192.168.1.7 -j DROP; /system/bin/ip6tables -w -I INPUT -p tcp --dport 5555 -j DROP"
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+on property:sys.boot_completed=1
+    start adb-lock
