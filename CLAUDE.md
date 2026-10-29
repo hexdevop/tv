@@ -9,7 +9,10 @@
 - ТВ: `adb connect 192.168.1.5:5555`; root: `adb shell "su 0 <cmd>"`.
 - Бэкап разделов: `ADB=<путь к adb> bash tools/backup.sh 192.168.1.5:5555 backup/<имя>`. Печатает `OK`/`MISMATCH` по каждому разделу. Докачать отдельные разделы: `PARTS="system vendor" ...`.
 - Скрипты в `tools/` пишутся на bash и запускаются из Git Bash. Бинарные данные (`exec-out`) только через bash: PowerShell 5.1 портит их при `>`.
-- `launcher/` (появится): Kotlin + Compose for TV, Gradle. `./gradlew assembleDebug test lint`, установка `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+- `launcher/`: Kotlin + Compose for TV (tv-material3), AGP 9.5, compileSdk/targetSdk 37, minSdk 29, пакет `com.hexdevop.launcher`. Из Git Bash в `launcher/`:
+  - сборка: `JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew assembleDebug` (также `test`, `lint`);
+  - установка и запуск: `adb install -r app/build/outputs/apk/debug/app-debug.apk; adb shell am start -n com.hexdevop.launcher/.MainActivity`.
+- После перезагрузки ТВ: `ADB=... bash tools/adb-lock.sh 192.168.1.5:5555 192.168.1.7` (iptables не переживает ребут).
 
 ## Структура
 ```
