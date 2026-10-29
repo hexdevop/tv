@@ -3,7 +3,7 @@
 Источник: `.claude/team/data/system-packages.txt` (снимок `pm list packages -s`, формат `пакет|apk|on/off|run`). Все пакеты сейчас `on`. В PLAN было «64», фактически 111 записей.
 Назначение определено по имени пакета и пути APK, без разбора dex. Где не уверен, написано «предп.».
 
-YouTube, Allplay и TelecomTV в списке нет: это пользовательские приложения в `/data/app`. Их зависимости среди системных: WebView, GMS/GSF (YouTube: вход и обновления), `com.android.providers.tv` (каналы ТВ-приложений), Widevine/DRM (в `vendor`, не приложение), сеть.
+YouTube и TelecomTV в списке нет: это пользовательские приложения в `/data/app`. Их зависимости среди системных: WebView, GMS/GSF (YouTube: вход и обновления), `com.android.providers.tv` (каналы ТВ-приложений), Widevine/DRM (в `vendor`, не приложение), сеть.
 
 Решения:
 - **keep** — не трогать.
