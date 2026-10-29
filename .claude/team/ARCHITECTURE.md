@@ -62,7 +62,8 @@ Verified boot (AVB) по getprop не обнаружен.
 
 ## Известные проблемы
 - **Заражение (обнаружено 2026-10-29).** 9 вредоносных пакетов от нескольких ADB-ботнетов, установлены 2026-06…08: `a.b.c`, `com.android.core.process`, `com.android.g6tech`, `com.android.media.module.services`, `com.android.server.ambient`, `com.android.system.service`, `com.google.android.apps.status`, `com.huawei.qx`, `com.imjustafriendlyguy.firmware`. Дропперы лежали в `/data/local/tmp` (`.d`, `.z`, `.s.apk`, `monkeapp888`, `nc`, `rxwp`). Серверы управления: 205.237.110.243:21998, 124.198.131.252:6001, 107.151.141.9:10003, 66.80.1.92:10001, 185.74.7.x. `/system` чистый. Статус чистки см. в PLAN.md.
-- adb без авторизации на всех интерфейсах. Это сама причина заражения.
+- adb без авторизации на всех интерфейсах. Это сама причина заражения. Временное ограничение: `tools/adb-lock.sh` (iptables, до перезагрузки). После каждой перезагрузки ТВ запускать заново.
+- SELinux `permissive` задан прошивкой (`androidboot.selinux=permissive` в cmdline), это не след вредоноса. Enforcing не включать без проверки HAL HiSilicon.
 - `/system` заполнен на 87%: при встраивании своих APK освобождать место удалением.
 - В `enabled_accessibility_services` прописаны несуществующие `com.leadschool.*`.
 
