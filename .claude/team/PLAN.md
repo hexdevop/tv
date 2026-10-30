@@ -14,7 +14,7 @@
 | T-010 | Изучить API `com.hisilicon.tv.service` для меню картинки и звука (dex-дамп из бэкапа) | architect | T-001 | todo |
 | T-011 | Лаунчер: сетка приложений, источники входа, настройки | backend-dev → qa-tester | T-009, T-010 | todo |
 | T-012 | Встроить лаунчер в `/system/priv-app`, снять Zeasn | firmware-dev | T-007, T-011 | todo |
-| T-014 | Авторизация adb: `ro.adb.secure=1` в `/system/build.prop`, ключ ПК (`~/.android/adbkey.pub`) заранее в `/data/misc/adb/adb_keys`. Пользователь у ТВ на случай подтверждения ключа. Не проверено: пропадает ли правило при перезапуске netd | firmware-dev → security-auditor | T-004 | todo |
+| T-014 | Авторизация adb: `ro.adb.secure=1` в `/system/build.prop`, ключ ПК в `/data/misc/adb/adb_keys`. Проверено 2026-10-30: подключение без ключа получает AUTH. Новый ПК: подтвердить запрос на экране ТВ. Оригинал `build.prop` в `/data/local/quarantine/build.prop.orig` и `backup/20261030-build-prop/`. Не проверено: пропадает ли правило iptables при перезапуске netd | firmware-dev → security-auditor | T-004 | done |
 | T-013 | Свои logo, bootanimation, bootmusic | firmware-dev | T-007 | todo |
 
 ## Бэклог техдолга
