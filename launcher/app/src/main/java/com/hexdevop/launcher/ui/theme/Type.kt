@@ -1,7 +1,11 @@
 package com.hexdevop.launcher.ui.theme
 
+import com.hexdevop.launcher.R
+
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -34,3 +38,8 @@ val Typography = Typography(
     )
     */
 )
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun f(res: Int, w: Int) = Font(res, FontWeight(w), variationSettings = FontVariation.Settings(FontVariation.weight(w)))
+
+val Unbounded = FontFamily(f(R.font.unbounded, 300), f(R.font.unbounded, 500))
+val Manrope = FontFamily(f(R.font.manrope, 500), f(R.font.manrope, 700))

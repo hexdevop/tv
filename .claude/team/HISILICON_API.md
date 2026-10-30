@@ -37,3 +37,12 @@
 2. Диапазоны значений `setBrightness` и других (ожидается 0-100).
 3. Аргументы `selectSource(a,b)` и `setVolume(a,b)`.
 4. Показывает ли `com.hisilicon.tvui/.MainActivity` выбранный источник без лишних действий.
+
+## Результат зонда T-011 (2026-10-30, обычное приложение `com.hexdevop.launcher`, targetSdk 37)
+Пп. 1-4 из списка выше закрыты отрицательно:
+1. `HitvManager.getInstance()` (класс `com.hisilicon.android.tvapi.HitvManager`, не `tv.*`) из обычного приложения недоступен. С `<uses-library ... required=false>` класс находится, но падает `UnsatisfiedLinkError: dlopen failed: library "/system/lib/libhi_tv_jni.so" ... is not accessible for the namespace "clns-4"`. Нативная библиотека закрыта linker-namespace для не-системных приложений. Любые вызовы Picture/Audio/SourceManager дают null. `com.hisilicon.android.tv.TvSourceManager` из HitvManager.jar приложению вообще не виден (`ClassNotFoundException`). Диапазоны и аргументы так и не получены.
+2. `com.hisilicon.tvui/.MainActivity` из обычного приложения: `SecurityException`, требуется `com.hisilicon.permission.COMMON_PERMISSION` (`signature|privileged`, объявлено в `com.hikeen.hkhotelmenu`). Пока лаунчер не в `/system/priv-app` с привилегированным разрешением, запуск ТВ/входов невозможен.
+3. `com.hikeen.action.tvsettings` (`com.hikeen.tvsettings/.menu.SettingsActivity`) запускается, но сразу делает `onDestroy` (меню-оверлей, ожидает вызова из ТВ-окна). Как запасной путь не годится.
+4. TvInputManager (TIF) пуст: `dumpsys tv_input` без входов. Публичным API список входов не получить.
+5. Работают из обычного приложения: `android.settings.WIFI_SETTINGS` -> `com.android.tv.settings/.connectivity.NetworkActivity`, `android.settings.SETTINGS` -> `.MainSettings`, `android.settings.SOUND_SETTINGS` -> `.device.displaysound.DisplaySoundActivity`.
+Вывод для T-012: если лаунчер станет привилегированным (priv-app, сигнатура/разрешение, возможно `android:sharedUserId`/namespace), зонд повторить: сначала `HitvManager.getInstance()`, потом `getBrightness`, `getAvailSourceList`, `selectSource`.
