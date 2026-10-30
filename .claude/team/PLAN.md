@@ -11,7 +11,7 @@
 | T-007 | Проверить, есть ли AVB/dm-verity и возможен ли remount `/system` (без изменений). Итог: AVB и verity нет (нет vbmeta, `root=/dev/mmcblk0p20` напрямую, в fstab нет `verify`/`avb`), ext4 без `shared_blocks`, SELinux permissive, свободно 265 МБ (system) и 155 МБ (vendor). Remount rw должен работать, сам remount не пробовали: проверим при первой записи (T-004) | lead | T-001 | done |
 | T-008 | Отключить лишние системные приложения через `pm disable-user` по списку T-006 (`tools/disable-apps.sh`, 19 пакетов) | firmware-dev | T-006 | done |
 | T-009 | Создать проект `launcher/` (Kotlin, Compose for TV, minSdk 29). Шаблон собран и запущен на ТВ (PSS ~57 МБ, холодный старт ~8 с) | backend-dev | Android Studio | done |
-| T-010 | Изучить API `com.hisilicon.tv.service` для меню картинки и звука (dex-дамп из бэкапа) | architect | T-001 | todo |
+| T-010 | Изучить API `com.hisilicon.tv.service` для меню картинки и звука (итог: `HISILICON_API.md`) | architect | T-001 | done |
 | T-011 | Лаунчер: сетка приложений, источники входа, настройки | backend-dev → qa-tester | T-009, T-010 | todo |
 | T-012 | Встроить лаунчер в `/system/priv-app`, снять Zeasn | firmware-dev | T-007, T-011 | todo |
 | T-014 | Авторизация adb: `ro.adb.secure=1` в `/system/build.prop`, ключ ПК в `/data/misc/adb/adb_keys`. Проверено 2026-10-30: подключение без ключа получает AUTH. Новый ПК: подтвердить запрос на экране ТВ. Оригинал `build.prop` в `/data/local/quarantine/build.prop.orig` и `backup/20261030-build-prop/`. Не проверено: пропадает ли правило iptables при перезапуске netd | firmware-dev → security-auditor | T-004 | done |
