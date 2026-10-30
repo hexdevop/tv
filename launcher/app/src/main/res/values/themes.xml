@@ -3,4 +3,10 @@
     <style name="Theme.Launcher" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">#06070A</item>
     </style>
+
+    <style name="Theme.Launcher.Panel" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

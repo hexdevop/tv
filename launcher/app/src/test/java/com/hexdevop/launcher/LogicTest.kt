@@ -18,8 +18,8 @@ class LogicTest {
         assertEquals(ok, filterInputs(ok))
     }
     @Test fun inputsDropsOthersAndBoundaries() =
-        assertEquals(emptyList<Int>(), filterInputs(listOf(-1, 3, 8, 13, 17, 22, 100)))
-    @Test fun inputsKeepsOrder() = assertEquals(listOf(12, 0, 9), filterInputs(listOf(12, 5, 0, 9)))
+        assertEquals(emptyList<Int>(), filterInputs(listOf(-1, 6, 8, 13, 17, 22, 100)))
+    @Test fun inputsKeepsOrder() = assertEquals(listOf(12, 0, 9), filterInputs(listOf(12, 7, 0, 9)))
 
     @Test fun stepNormal() = assertEquals(55, stepValue(50, 5))
     @Test fun stepClampMax() = assertEquals(100, stepValue(98, 5))

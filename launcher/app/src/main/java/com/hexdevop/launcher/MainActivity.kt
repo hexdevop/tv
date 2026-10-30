@@ -133,16 +133,29 @@ class MainActivity : ComponentActivity() {
         return list + Entry("all", "Все", "Все приложения на телевизоре", Color(0xFFE7E4DE), Color(0xFF14120C), null, onAll)
     }
 
-    // tvapi и com.hisilicon.tvui/com.hikeen.tvsettings обычному приложению недоступны (см. HISILICON_API.md): Картинка и Звук ведут в com.android.tv.settings, ТВ заработает у привилегированного приложения (T-012).
+    private val tvui = Intent().setComponent(ComponentName("com.hisilicon.tvui", "com.hisilicon.tvui.MainActivity"))
+
+    private fun input(id: Int) {
+        Thread {
+            TvApi.selectSource(id)
+            runOnUiThread { open(Intent(tvui)) }
+        }.start()
+    }
+
+    // без tvui: при пустом списке каналов он сам открывает мастер сканирования
+    private fun panel(kind: String) {
+        open(Intent(this, PanelActivity::class.java).putExtra("kind", kind))
+    }
+
     private fun dockEntries(): List<Entry> {
         fun e(key: String, label: String, sub: String, color: Color = Blue, run: () -> Unit) =
             Entry(key, label, sub, color, Dark, null, run)
-        return listOf(
-            e("tv", "ТВ-каналы", "Антенна и входы", Color(0xFFC9D2E0)) {
-                open(Intent().setComponent(ComponentName("com.hisilicon.tvui", "com.hisilicon.tvui.MainActivity")))
-            },
-            e("picture", "Картинка", "Яркость, контраст, режим") { open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) },
-            e("sound", "Звук", "Громкость и режим") { open(Intent("android.settings.SOUND_SETTINGS")) },
+        val inputs = dockInputs(TvApi.sourceList()).map { (id, name) ->
+            e("in$id", name, sourceCaption(id), Color(0xFFC9D2E0)) { input(id) }
+        }
+        return inputs + listOf(
+            e("picture", "Картинка", "Яркость, контраст, режим") { panel("picture") },
+            e("sound", "Звук", "Громкость и режим") { panel("sound") },
             e("net", "Сеть", "Wi-Fi и кабель") { open(Intent(Settings.ACTION_WIFI_SETTINGS)) },
             e("settings", "Настройки", "Все настройки системы") { open(Intent(Settings.ACTION_SETTINGS)) },
         )
@@ -163,7 +176,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Thread { probeTvApi() }.start()
         setContent {
             LauncherTheme {
                 var showAll by remember { mutableStateOf(false) }

@@ -53,3 +53,9 @@
 - `getSourceList`=[0, 18, 1, 3, 9, 10, 13]: ATV, DVBT, DVBC, CVBS1, HDMI1, HDMI2, MEDIA. `getAvailSourceList` пуст. `getSelectSourceId`=18, `getSignalStatus`=0.
 - `getVolume(0)`=8, `getVolume(1)`=8, `getVolume(2)`=0, `getVolume(3)`=0.
 Обновление: `adb install -r` поверх системного (тот же debug-ключ).
+
+## Аргументы из байткода и ограничение обновления (T-011, 2026-10-30)
+- `selectSource(id, 0)`: HiTvPlayer `HalApi.changeSource(I)V` зовёт `TvSourceManager.selectSource(id, 0)`; трёхаргументный вариант `(id, 0, x)`. Второй аргумент всегда 0 (окно). Затем `com.hisilicon.tvui/.MainActivity`.
+- `Audio.setVolume/getVolume` ни HiTvPlayer, ни HkTvSettings не зовут. Громкость ведёт Android `AudioManager`: `STREAM_MUSIC` min 0, max 100, сейчас 8 = `Audio.getVolume(0)`. Лаунчер читает/пишет через `AudioManager`. `Audio.setMute(4, bool)` зовёт tvui (режим записи).
+- Режим звука: `Audio.getSoundMode()/setSoundMode(int)` (HkTvSettings `AudioManagerImpl`).
+- ВАЖНО: после `adb install -r` поверх `/system/priv-app/HexLauncher` пакет становится `UPDATED_SYSTEM_APP` с кодом в `/data/app/...`; флаг PRIVILEGED и разрешение COMMON_PERMISSION остаются, но `libhi_tv_jni.so` снова закрыт namespace (`clns-4`), `HitvManager.getInstance()` падает с `UnsatisfiedLinkError`. API работает только если APK лежит в `/system/priv-app`. Обновлять надо заменой файла в `/system` (firmware-dev) или так: `pm uninstall-system-updates` не поможет, нужен новый APK в /system.
