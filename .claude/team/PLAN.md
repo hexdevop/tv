@@ -20,7 +20,7 @@
 ## Бэклог техдолга
 - Release подписан debug-ключом: сделать отдельный ключ вне репозитория. `allowBackup=false`.
 - После установки лаунчера запускать `cmd package compile -m speed -f com.hexdevop.launcher` (скрипт перезагружает ТВ, поэтому вручную).
-- Повторное заражение (найдено 2026-10-30): `com.android.media.module.services` стоял заново с 2026-10-29 22:10:31, installer `com.zeasn.launcher`, sha256 6e8630a3...daa34f. Отключён и заморожен, APK в `/data/local/quarantine/media.module.services.apk.bad`. В `/data/local/quarantine/media0/`: `.system.apk` (фальшивый `com.google.play`, автозапуск, установка APK), `.bbc`, `.f`. Источник: `filedownloader` лаунчера Zeasn (в базе файл из 3 частей ровно 15 921 552 байта, размер вредоноса; там же следы загрузок 10,1 и 13,3 МБ), URL стёрты. Zeasn отключён. Нужно подтверждение на `pm uninstall` и удаление карантина.
+- Повторное заражение 2026-10-29 22:10 (sha256 6e8630a3...daa34f, источник: `filedownloader` лаунчера Zeasn, в базе файл ровно 15 921 552 байта и следы загрузок 10,1 и 13,3 МБ). Пакет и файлы удалены с подтверждения пользователя 2026-10-30, Zeasn отключён. Проверять `pm list packages -3` после включений.
 - Adups FOTA (`/system/app/FotaUpdate`) перенесён в `/data/local/quarantine/FotaUpdate` 2026-10-29. Окончательное удаление карантина только с подтверждения.
 - `mount -o remount,ro /` после записи отвечает «busy», раздел остаётся rw до перезагрузки.
 - Почистить `enabled_accessibility_services` от несуществующих `com.leadschool.*`.
