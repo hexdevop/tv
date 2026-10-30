@@ -14,13 +14,14 @@ object TvApi {
     private const val PKG = "com.hisilicon.android.tvapi.HitvManager"
     private val INT = Int::class.javaPrimitiveType!!
 
-    private val tv: Any? by lazy {
-        runCatching { Class.forName(PKG).getMethod("getInstance").invoke(null) }
-            .onFailure { Log.w(TAG, "unavailable: $it") }.getOrNull()
-    }
-    private val picture by lazy { part("getPicture") }
-    private val audio by lazy { part("getAudio") }
-    private val source by lazy { part("getSourceManager") }
+    // неудачу не кешируем: лаунчер может стартовать раньше сервиса HiSilicon
+    private var cached: Any? = null
+    private val tv: Any?
+        get() = cached ?: runCatching { Class.forName(PKG).getMethod("getInstance").invoke(null) }
+            .onFailure { Log.w(TAG, "unavailable: $it") }.getOrNull().also { cached = it }
+    private val picture get() = part("getPicture")
+    private val audio get() = part("getAudio")
+    private val source get() = part("getSourceManager")
 
     private fun part(n: String) = runCatching { tv?.let { it.javaClass.getMethod(n).invoke(it) } }.getOrNull()
 

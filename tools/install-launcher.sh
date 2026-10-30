@@ -10,5 +10,9 @@ APK=launcher/app/build/outputs/apk/release/app-release.apk
 
 "$ADB" -s "$DEV" shell "pm uninstall-system-updates com.hexdevop.launcher" || true
 "$ADB" -s "$DEV" push "$APK" /data/local/tmp/HexLauncher.apk
-"$ADB" -s "$DEV" shell "su 0 sh -c 'mount -o remount,rw / && cp /data/local/tmp/HexLauncher.apk /system/priv-app/HexLauncher/HexLauncher.apk && chmod 644 /system/priv-app/HexLauncher/HexLauncher.apk && chcon u:object_r:system_file:s0 /system/priv-app/HexLauncher/HexLauncher.apk && sync && rm /data/local/tmp/HexLauncher.apk && md5sum /system/priv-app/HexLauncher/HexLauncher.apk && reboot'"
-md5sum "$APK"
+want=$(md5sum "$APK" | cut -d' ' -f1)
+T=/system/priv-app/HexLauncher/HexLauncher.apk
+# перезагрузка только при совпавшем хеше: битый APK на месте HOME хуже старого.
+# кеш разбора сбрасываем, иначе система не увидит изменения манифеста
+"$ADB" -s "$DEV" shell "su 0 sh -c 'mount -o remount,rw / && cp /data/local/tmp/HexLauncher.apk $T && chmod 644 $T && chcon u:object_r:system_file:s0 $T && sync && rm /data/local/tmp/HexLauncher.apk && find /data/system/package_cache -name \"*Hex*\" -delete && [ \"\$(md5sum $T | cut -d\" \" -f1)\" = $want ] && reboot'"
+# после загрузки: adb shell cmd package compile -m speed -f com.hexdevop.launcher

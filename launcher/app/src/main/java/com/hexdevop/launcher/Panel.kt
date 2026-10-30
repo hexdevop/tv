@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -37,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
+import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.hexdevop.launcher.ui.theme.LauncherTheme
 import com.hexdevop.launcher.ui.theme.Manrope
 import com.hexdevop.launcher.ui.theme.Unbounded
@@ -90,7 +95,16 @@ private val Blue = Color(0xFF6FB7FF)
 @Composable
 private fun Panel(title: String, params: List<Param>) {
     var sel by remember { mutableIntStateOf(if (params.size > 1) 1 else 0) }
-    val vals = remember { params.map { mutableIntStateOf((it.get() ?: 0).coerceIn(0, (it.names?.size ?: 101) - 1)) } }
+    val vals = remember { params.map { mutableIntStateOf(0) } }
+    var ready by remember { mutableStateOf(false) }
+    // TvApi/AudioManager: binder-вызовы только вне главного потока
+    val io = remember { Executors.newSingleThreadExecutor() }
+    DisposableEffect(Unit) { onDispose { io.shutdown() } }
+    LaunchedEffect(Unit) {
+        val init = withContext(Dispatchers.IO) { params.map { it.get() } }
+        init.forEachIndexed { i, x -> vals[i].intValue = (x ?: 0).coerceIn(0, (params[i].names?.size ?: 101) - 1) }
+        ready = true
+    }
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { fr.requestFocus() }
     val p = params[sel]
@@ -99,10 +113,11 @@ private fun Panel(title: String, params: List<Param>) {
     // режим: тики показывают положение в списке
     val frac = if (n != null) (v + 1f) / n else v / 100f
     fun change(d: Int) {
+        if (!ready) return
         val nv = if (n != null) stepValue(v, d, 0, n - 1) else stepValue(v, d * p.step)
         if (nv != v) {
             v = nv
-            p.set(nv)
+            io.execute { runCatching { p.set(nv) } }
         }
     }
     Box(

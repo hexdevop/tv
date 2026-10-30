@@ -8,12 +8,10 @@ import android.content.IntentFilter
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,6 +36,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -54,10 +55,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.Key
@@ -68,8 +69,13 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.graphics.Bitmap
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.tv.material3.Text
@@ -88,6 +94,7 @@ private val Dark = Color(0xFF0B0C0F)
 private val Blue = Color(0xFF6FB7FF)
 
 /** Плитка ряда приложений или чип дока. */
+@Immutable
 class Entry(
     val key: String,
     val label: String,
@@ -98,10 +105,22 @@ class Entry(
     val run: () -> Unit,
 )
 
-class AppInfo(val pkg: String, val label: String, val intent: Intent)
+@Immutable
+class AppInfo(val pkg: String, val label: String, val intent: Intent, val icon: ImageBitmap)
+
+class Data(val apps: List<Entry>, val dock: List<Entry>, val all: List<AppInfo>) {
+    val keys = apps.map { it.key } + dock.map { it.key } + all.map { it.pkg }
+}
 
 class MainActivity : ComponentActivity() {
     private val prefs by lazy { getSharedPreferences("launcher", MODE_PRIVATE) }
+
+    // всё тяжёлое (PackageManager, TvApi, иконки, свечения) грузится в фоне, главный поток только рисует
+    private var data by mutableStateOf<Data?>(null)
+    private var showAll by mutableStateOf(false)
+    private var focus by mutableStateOf<String?>(null)
+    private val glows = mutableStateMapOf<Color, ImageBitmap>()
+    private val setFocus: (String) -> Unit = { focus = it }
 
     private fun open(i: Intent, saveKey: String? = null) {
         try {
@@ -130,8 +149,11 @@ class MainActivity : ComponentActivity() {
                 icon(pm.getApplicationIcon(pkg)),
             ) { open(intent, pkg) }
         }
-        return list + Entry("all", "Все", "Все приложения на телевизоре", Color(0xFFE7E4DE), Color(0xFF14120C), null, onAll)
+        return list + allEntry(onAll)
     }
+
+    private fun allEntry(onAll: () -> Unit) =
+        Entry("all", "Все", "Все приложения на телевизоре", Color(0xFFE7E4DE), Color(0xFF14120C), null, onAll)
 
     private val tvui = Intent().setComponent(ComponentName("com.hisilicon.tvui", "com.hisilicon.tvui.MainActivity"))
 
@@ -169,28 +191,60 @@ class MainActivity : ComponentActivity() {
             .distinctBy { it.activityInfo.packageName }
             .map {
                 val a = it.activityInfo
-                AppInfo(a.packageName, it.loadLabel(pm).toString(), Intent().setComponent(ComponentName(a.packageName, a.name)))
+                AppInfo(
+                    a.packageName, it.loadLabel(pm).toString(),
+                    Intent().setComponent(ComponentName(a.packageName, a.name)), icon(it.loadIcon(pm)),
+                )
             }
             .sortedBy { it.label.lowercase() }
+    }
+
+    private fun load() {
+        Thread {
+            // HOME не имеет права падать: при сбое остаются «Все», настройки и входы
+            val d = runCatching { Data(appEntries { showAll = true }, dockEntries(), allApps()) }.getOrElse {
+                Log.e("Launcher", "load failed", it)
+                Data(listOf(allEntry { showAll = true }), dockEntries(), emptyList())
+            }
+            val start = pickStartFocus(prefs.getString("last", null), d.apps.map { it.key }) ?: "all"
+            runOnUiThread {
+                if (data?.keys != d.keys) {
+                    data = d
+                    // фокус на удалённом приложении не оставляем
+                    if (focus == null || focus !in d.keys) focus = start
+                }
+            }
+            val first = (d.apps + d.dock).firstOrNull { it.key == start }?.color
+            val dens = resources.displayMetrics.density
+            (listOfNotNull(first) + (d.apps + d.dock).map { it.color }).distinct().forEach { c ->
+                if (c !in glows) runCatching { glow(c, dens) }.onSuccess { g -> runOnUiThread { glows[c] = g } }
+            }
+        }.start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        load()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        showAll = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             LauncherTheme {
-                var showAll by remember { mutableStateOf(false) }
-                val apps = remember { appEntries { showAll = true } }
-                val dock = remember { dockEntries() }
-                val all = remember { allApps() }
-                var focus by remember {
-                    mutableStateOf(pickStartFocus(prefs.getString("last", null), apps.map { it.key }) ?: "all")
-                }
-                if (showAll) {
+                val d = data
+                if (d == null) {
+                    Box(Modifier.fillMaxSize().background(Bg))
+                } else if (showAll) {
                     BackHandler { showAll = false }
-                    AllApps(all) { open(it.intent, it.pkg) }
+                    AllApps(d.all) { open(it.intent, it.pkg) }
                 } else {
                     BackHandler { }
-                    Home(apps, dock, focus) { focus = it }
+                    key(d) { Home(d.apps, d.dock, focus ?: "all", glows, setFocus) }
                 }
             }
         }
@@ -198,9 +252,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun Home(apps: List<Entry>, dock: List<Entry>, focus: String, onFocus: (String) -> Unit) {
+private fun Home(
+    apps: List<Entry>, dock: List<Entry>, focus: String, glows: Map<Color, ImageBitmap>, onFocus: (String) -> Unit,
+) {
     val cur = (apps + dock).firstOrNull { it.key == focus } ?: apps.first()
-    val color by animateColorAsState(cur.color, tween(450), label = "eclipse")
     val reqs = remember { (apps + dock).associate { it.key to FocusRequester() } }
     // последний элемент каждого ряда: вверх/вниз возвращает на него, а не на ближайший по геометрии
     val last = remember { arrayOf(if (cur in apps) cur.key else apps.first().key, if (cur in dock) cur.key else dock.first().key) }
@@ -216,7 +271,8 @@ private fun Home(apps: List<Entry>, dock: List<Entry>, focus: String, onFocus: (
         val r = if (it.key == dir && it.type == KeyEventType.KeyDown) reqs[last[to]] else null
         r?.requestFocus() ?: false
     }
-    Box(Modifier.fillMaxSize().background(Bg).drawBehind { eclipse(color) }) {
+    Box(Modifier.fillMaxSize().background(Bg)) {
+        Box(Modifier.fillMaxSize().drawBehind { eclipse(glows[cur.color]) })
         Clock(Modifier.offset(48.dp, 38.dp))
         Column(Modifier.offset(48.dp, 148.dp).width(780.dp)) {
             Text(
@@ -233,36 +289,46 @@ private fun Home(apps: List<Entry>, dock: List<Entry>, focus: String, onFocus: (
             Modifier.offset(48.dp, 402.dp).width(1184.dp).height(164.dp).jump(Key.DirectionDown, 1),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            apps.forEach { Tile(it, focus, reqs.getValue(it.key), focused) }
+            apps.forEach { Tile(it, it.key == focus, reqs.getValue(it.key), focused) }
         }
         Row(
             Modifier.offset(48.dp, 594.dp).width(1184.dp).height(88.dp).jump(Key.DirectionUp, 0),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            dock.forEach { Chip(it, focus, reqs.getValue(it.key), focused) }
+            dock.forEach { Chip(it, it.key == focus, reqs.getValue(it.key), focused) }
         }
     }
 }
 
-private fun DrawScope.eclipse(c: Color) {
-    val g = Offset(1000.dp.toPx(), 160.dp.toPx())
-    val gr = 490.dp.toPx()
-    drawCircle(
-        Brush.radialGradient(
-            0f to c.copy(alpha = .62f), .38f to c.copy(alpha = .2f), .68f to c.copy(alpha = 0f),
-            center = g, radius = gr,
-        ), gr, g,
-    )
-    // кромка затмения: градиент вместо blur-тени
-    val rim = Offset(980.dp.toPx(), 160.dp.toPx())
-    val rr = 236.dp.toPx()
-    drawCircle(
-        Brush.radialGradient(
-            0f to c.copy(alpha = .85f), .8f to c.copy(alpha = .85f), 1f to c.copy(alpha = 0f),
-            center = rim, radius = rr,
-        ), rr, rim,
-    )
+// свечение и кромка затмения рисуются один раз в маленький битмап на цвет (область x 510..1280, y 0..650 dp)
+private const val GLOW_SCALE = .5f
+
+private fun glow(c: Color, d: Float): ImageBitmap {
+    val k = d * GLOW_SCALE
+    val bmp = Bitmap.createBitmap((770 * k).toInt(), (650 * k).toInt(), Bitmap.Config.ARGB_8888)
+    val cv = android.graphics.Canvas(bmp)
+    fun ring(cx: Float, r: Float, vararg s: Pair<Float, Float>) {
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.DITHER_FLAG)
+        val x = (cx - 510) * k
+        p.shader = RadialGradient(
+            x, 160 * k, r * k, IntArray(s.size) { c.copy(alpha = s[it].second).toArgb() },
+            FloatArray(s.size) { s[it].first }, Shader.TileMode.CLAMP,
+        )
+        cv.drawCircle(x, 160 * k, r * k, p)
+    }
+    ring(1000f, 490f, 0f to .62f, .38f to .2f, .68f to 0f)
+    ring(980f, 236f, 0f to .85f, .8f to .85f, 1f to 0f)
+    return bmp.asImageBitmap()
+}
+
+private fun DrawScope.eclipse(g: ImageBitmap?) {
+    if (g != null) {
+        drawImage(
+            g, dstOffset = IntOffset(510.dp.roundToPx(), 0), dstSize = IntSize(770.dp.roundToPx(), 650.dp.roundToPx()),
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+        )
+    }
     drawCircle(Bg, 200.dp.toPx(), Offset(980.dp.toPx(), 170.dp.toPx()))
 }
 
@@ -310,13 +376,11 @@ private fun Modifier.startFocus(on: Boolean): Modifier {
 }
 
 @Composable
-private fun RowScope.Tile(e: Entry, focus: String, req: FocusRequester, onFocus: (String) -> Unit) {
-    val on = e.key == focus
-    val w by animateFloatAsState(if (on) 2.1f else 1f, tween(220), label = "w")
-    val bg by animateColorAsState(if (on) e.color else Card, tween(220), label = "bg")
+private fun RowScope.Tile(e: Entry, on: Boolean, req: FocusRequester, onFocus: (String) -> Unit) {
+    val bg = if (on) e.color else Card
     val ink = if (on) e.ink else Ink
     Column(
-        Modifier.weight(w).height(164.dp).clip(RoundedCornerShape(22.dp)).background(bg)
+        Modifier.weight(if (on) 2.1f else 1f).height(164.dp).clip(RoundedCornerShape(22.dp)).background(bg)
             .focusRequester(req).nav(e.key, onFocus, e.run).padding(14.dp, 18.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -345,9 +409,8 @@ private fun GridIcon(c: Color) {
 }
 
 @Composable
-private fun RowScope.Chip(e: Entry, focus: String, req: FocusRequester, onFocus: (String) -> Unit) {
-    val on = e.key == focus
-    val bg by animateColorAsState(if (on) Fg else Bg, tween(180), label = "chip")
+private fun RowScope.Chip(e: Entry, on: Boolean, req: FocusRequester, onFocus: (String) -> Unit) {
+    val bg = if (on) Fg else Bg
     Box(
         Modifier.weight(1f).height(60.dp).clip(CircleShape).background(bg)
             .focusRequester(req).nav(e.key, onFocus, e.run),
@@ -362,7 +425,6 @@ private fun RowScope.Chip(e: Entry, focus: String, req: FocusRequester, onFocus:
 
 @Composable
 private fun AllApps(apps: List<AppInfo>, onOpen: (AppInfo) -> Unit) {
-    val pm = LocalContext.current.packageManager
     Box(Modifier.fillMaxSize().background(Bg)) {
         Text(
             "Все приложения", Modifier.offset(48.dp, 38.dp), color = Fg, fontFamily = Unbounded,
@@ -377,7 +439,6 @@ private fun AllApps(apps: List<AppInfo>, onOpen: (AppInfo) -> Unit) {
         ) {
             itemsIndexed(apps, key = { _, a -> a.pkg }) { i, a ->
                 var f by remember { mutableStateOf(false) }
-                val icon = remember(a.pkg) { pm.getApplicationIcon(a.pkg).toBitmap(64, 64).asImageBitmap() }
                 Column(
                     Modifier.height(124.dp).clip(RoundedCornerShape(22.dp))
                         .background(if (f) Fg else Card)
@@ -387,7 +448,7 @@ private fun AllApps(apps: List<AppInfo>, onOpen: (AppInfo) -> Unit) {
                         .padding(18.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Image(icon, null, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+                    Image(a.icon, null, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
                     Text(
                         a.label, color = if (f) Dark else Ink, fontFamily = Manrope, fontWeight = FontWeight.Bold,
                         fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
