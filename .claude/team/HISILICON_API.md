@@ -46,3 +46,10 @@
 4. TvInputManager (TIF) пуст: `dumpsys tv_input` без входов. Публичным API список входов не получить.
 5. Работают из обычного приложения: `android.settings.WIFI_SETTINGS` -> `com.android.tv.settings/.connectivity.NetworkActivity`, `android.settings.SETTINGS` -> `.MainSettings`, `android.settings.SOUND_SETTINGS` -> `.device.displaysound.DisplaySoundActivity`.
 Вывод для T-012: если лаунчер станет привилегированным (priv-app, сигнатура/разрешение, возможно `android:sharedUserId`/namespace), зонд повторить: сначала `HitvManager.getInstance()`, потом `getBrightness`, `getAvailSourceList`, `selectSource`.
+
+## Результат зонда из `/system/priv-app` (2026-10-30)
+Лаунчер в `/system/priv-app/HexLauncher`, разрешение в `/system/etc/permissions/privapp-permissions-hexlauncher.xml`: `COMMON_PERMISSION` выдано, `HitvManager.getInstance()` работает.
+- Значения: яркость/контраст/насыщенность/резкость 50, подсветка 80, `getPictureMode`=0, `getSoundMode`=0.
+- `getSourceList`=[0, 18, 1, 3, 9, 10, 13]: ATV, DVBT, DVBC, CVBS1, HDMI1, HDMI2, MEDIA. `getAvailSourceList` пуст. `getSelectSourceId`=18, `getSignalStatus`=0.
+- `getVolume(0)`=8, `getVolume(1)`=8, `getVolume(2)`=0, `getVolume(3)`=0.
+Обновление: `adb install -r` поверх системного (тот же debug-ключ).

@@ -20,9 +20,11 @@ android {
 
     buildTypes {
         release {
+            // ключ debug: тот же, что у отладочной сборки, чтобы adb install -r обновлял системное приложение
+            signingConfig = signingConfigs.getByName("debug")
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                packageScope = setOf("androidx.**")
             }
         }
     }

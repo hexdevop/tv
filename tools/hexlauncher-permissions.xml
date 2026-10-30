@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.hexdevop.launcher">
+        <permission name="com.hisilicon.permission.COMMON_PERMISSION"/>
+    </privapp-permissions>
+</permissions>

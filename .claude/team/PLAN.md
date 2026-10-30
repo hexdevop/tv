@@ -13,12 +13,11 @@
 | T-009 | Создать проект `launcher/` (Kotlin, Compose for TV, minSdk 29). Шаблон собран и запущен на ТВ (PSS ~57 МБ, холодный старт ~8 с) | backend-dev | Android Studio | done |
 | T-010 | Изучить API `com.hisilicon.tv.service` для меню картинки и звука (итог: `HISILICON_API.md`) | architect | T-001 | done |
 | T-011 | Лаунчер: главный экран «Затмение», все приложения, запуск, 17 unit-тестов готовы. Осталось после T-012: реальные входы, панели Картинка и Звук (API HiSilicon закрыт для обычного приложения, см. HISILICON_API.md) | backend-dev → qa-tester | T-009, T-010, T-012 | in_progress |
-| T-012 | Встроить лаунчер в `/system/priv-app`, снять Zeasn | firmware-dev | T-007, T-011 | todo |
+| T-012 | Встроить лаунчер в `/system/priv-app` (сделано 2026-10-30, API HiSilicon работает), снять Zeasn (осталось: сделать HOME, отключить `com.zeasn.launcher` и `com.hikeen.menu`) | firmware-dev | T-007, T-011 | in_progress |
 | T-014 | Авторизация adb: `ro.adb.secure=1` в `/system/build.prop`, ключ ПК в `/data/misc/adb/adb_keys`. Проверено 2026-10-30: подключение без ключа получает AUTH. Новый ПК: подтвердить запрос на экране ТВ. Оригинал `build.prop` в `/data/local/quarantine/build.prop.orig` и `backup/20261030-build-prop/`. Не проверено: пропадает ли правило iptables при перезапуске netd | firmware-dev → security-auditor | T-004 | done |
 | T-013 | Свои logo, bootanimation, bootmusic | firmware-dev | T-007 | todo |
 
 ## Бэклог техдолга
-- Release с R8 падает: `IllegalAccessError kotlin.collections.c` из-за `optimization.packageScope` с `kotlin.**` в `launcher/app/build.gradle.kts`. Анимация в release ~15 кадров/с, проверить AOT или baseline profile.
 - Adups FOTA (`/system/app/FotaUpdate`) перенесён в `/data/local/quarantine/FotaUpdate` 2026-10-29. Окончательное удаление карантина только с подтверждения.
 - `mount -o remount,ro /` после записи отвечает «busy», раздел остаётся rw до перезагрузки.
 - Почистить `enabled_accessibility_services` от несуществующих `com.leadschool.*`.

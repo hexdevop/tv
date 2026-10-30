@@ -163,6 +163,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Thread { probeTvApi() }.start()
         setContent {
             LauncherTheme {
                 var showAll by remember { mutableStateOf(false) }
